@@ -1,9 +1,9 @@
 if [[ -n "$ZSH_VERSION" ]]; then
-    SCRIPT_PATH=$(realpath -s $(dirname $0))
+    SCRIPT_PATH=$(cd $(dirname $0) && pwd)
 elif [[ -n "$BASH_VERSION" ]]; then
-    SCRIPT_PATH=$(realpath -s $(dirname ${BASH_SOURCE[0]}))
+    SCRIPT_PATH=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 else
-    SCRIPT_PATH=$(realpath -s ~/.workon)
+    SCRIPT_PATH=$(cd ~/.workon && pwd)
 fi
 VIRT_PATH="$SCRIPT_PATH/virtualenv"
 MED_KF=~/.ssh/med-key
