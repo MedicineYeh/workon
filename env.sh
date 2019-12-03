@@ -11,6 +11,8 @@ MED_KF=~/.ssh/med-key
 add_ssh_config() {
     local host=$1
 
+    # Create if file not exist
+    [[ ! -f  ~/.ssh/config ]] && touch  ~/.ssh/config
     # Do nothing if config exists
     [[ $(grep "Host ${host##*@}" ~/.ssh/config) != "" ]] && return 0
     echo "Adding $host to ~/.ssh/config"
@@ -25,7 +27,7 @@ EOF
 
 deploy_key_to() {
     local host=$1
-    local res=$(ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 $host echo 'ok' 2>&1)
+    local res=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $host echo 'ok' 2>&1)
     # Do nothing if the connection success
     [[ "$res" == "ok" ]] && return 0
     # Exit if the connection time out
@@ -52,7 +54,7 @@ deploy_key_to() {
 
 function check_connection() {
     echo -e "Checking connection..."
-    local res=$(ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 $1 echo 'ok' 2>&1)
+    local res=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $1 echo 'ok' 2>&1)
     [[ "$res" != "ok" ]] && return 1
     return 0
 }
@@ -67,11 +69,11 @@ function create_env() {
 
     # Prepare virtual environment
     echo "export JUMP_SERVER=$user@$host" >> $VIRT_PATH/$host/bin/activate
-    cp $VIRT_PATH/.bin/* $VIRT_PATH/$host/bin
+    [[ -d $VIRT_PATH/.bin ]] && cp $VIRT_PATH/.bin/* $VIRT_PATH/$host/bin
 
     # Active virtual env and install dependencies in the virtual env
     source $VIRT_PATH/$host/bin/activate
-    pip3 install -r $VIRT_PATH/.requirements.txt
+    [[ -f $VIRT_PATH/.requirements.txt ]] && pip3 install -r $VIRT_PATH/.requirements.txt
 }
 
 function workon() {
