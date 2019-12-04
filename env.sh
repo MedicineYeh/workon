@@ -6,7 +6,7 @@ else
     SCRIPT_PATH=$(cd ~/.workon && pwd)
 fi
 VIRT_PATH="$SCRIPT_PATH/virtualenv"
-MED_KF=~/.ssh/med-key
+SSH_KEY_WORKON=~/.ssh/med-key
 
 add_ssh_config() {
     local host=$1
@@ -20,7 +20,7 @@ add_ssh_config() {
     cat >> ~/.ssh/config << EOF
 Host ${host##*@}
   User ${host%%@*}
-  IdentityFile ${MED_KF}
+  IdentityFile ${SSH_KEY_WORKON}
 EOF
 
     # Generate key if not exists
@@ -38,9 +38,9 @@ deploy_key_to() {
 
     echo -e "Deploying public key to $host...\n"
     # Generate key if not exists
-    [[ ! -f $MED_KF ]] && ssh-keygen -t rsa -N "" -f $MED_KF
+    [[ ! -f $SSH_KEY_WORKON ]] && ssh-keygen -t rsa -N "" -f $SSH_KEY_WORKON
     if [[ $SELF_TEST != "" ]]; then
-        cat ${MED_KF}.pub >> /root/.ssh/authorized_keys
+        cat ${SSH_KEY_WORKON}.pub >> /root/.ssh/authorized_keys
         return 0
     fi
     # Copy keys to remote (ESXi places in a different place)
@@ -48,9 +48,9 @@ deploy_key_to() {
     res=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $host uname -a 2>&1)
     if [[ "$res" == *"ESXi"* ]]; then
         echo "Copying key to remote, please enter password"
-        cat ${MED_KF}.pub | ssh $host "cat - >> /etc/ssh/keys-root/authorized_keys"
+        cat ${SSH_KEY_WORKON}.pub | ssh $host "cat - >> /etc/ssh/keys-root/authorized_keys"
     else
-        ssh-copy-id -f -i ${MED_KF}.pub $host
+        ssh-copy-id -f -i ${SSH_KEY_WORKON}.pub $host
     fi
     return 0
 }
