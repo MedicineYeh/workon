@@ -22,6 +22,9 @@ Host ${host##*@}
   User ${host%%@*}
   IdentityFile ${MED_KF}
 EOF
+
+    # Generate key if not exists
+    [[ ! -f $SSH_KEY_WORKON ]] && ssh-keygen -t rsa -N "" -f $SSH_KEY_WORKON
     return 0
 }
 
