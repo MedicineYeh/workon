@@ -1,0 +1,8 @@
+#!/bin/bash
+
+EXTRA_OPTIONS=(-o StrictHostKeyChecking=no -i ~/.ssh/hcibench-key)
+# This line not safe for connections. However, it saves lots of problems on connecting to servers.
+EXTRA_OPTIONS+=(-o UserKnownHostsFile=/dev/null)
+[[ $JUMP_SERVER != "" ]] && EXTRA_OPTIONS+=(-J $JUMP_SERVER)
+
+/usr/bin/ssh "${EXTRA_OPTIONS[@]}" "$@"
