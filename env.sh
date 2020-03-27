@@ -79,6 +79,35 @@ function create_env() {
     [[ -f $VIRT_PATH/.requirements.txt ]] && pip3 install -r $VIRT_PATH/.requirements.txt
 }
 
+function __generate_proxy_port_file() {
+    for port in {4000..5000}; do
+        if [[ "$(lsof -i -P -n | grep $port)" == "" ]]; then
+            echo $port > $VIRT_PATH/$host/PROXY_PORT
+            break
+        fi
+    done
+}
+
+function __open_workon_proxy() {
+    if [[ -f $VIRT_PATH/$host/PROXY_PORT ]]; then
+        D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
+        if [[ $(ps -aux | grep "ssh -D $D_PORT" | grep "$host" | wc -l) != 1 ]]; then
+            # Found last record of port number but could not find existing process
+            # Find another port numer and store it
+            __generate_proxy_port_file
+        fi
+    else
+        __generate_proxy_port_file
+    fi
+    # Load latest proxy port file
+    D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
+    # Create a new ssh daemon for SOCKS proxy if not exist
+    [[ $(ps -aux | grep "ssh -D $D_PORT" | grep "$host" | wc -l) != 1 ]] && \
+        /usr/bin/ssh -D $D_PORT -f -C -q -N "$host"
+    export WORKON_PROXY="socks5://127.0.0.1:$D_PORT"
+    echo "WORKON_PROXY=$WORKON_PROXY"
+}
+
 function workon() {
     [[ "$1" == "" ]] && echo "Please specify host_ip/FQDN" && exit 1
     local host="${1##*@}"
@@ -98,11 +127,16 @@ function workon() {
         ! check_connection $host && echo "Cannot connect to $host with identity file" && return 1
 
         create_env $host
+
+        __generate_proxy_port_file
     else
         # Exit if the host is not reachable
         ! check_connection "$host" && echo "Cannot connect to $host" && return 1
         source $VIRT_PATH/$host/bin/activate
     fi
+
+    __open_workon_proxy
+
     return 0
 }
 
