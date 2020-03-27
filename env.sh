@@ -8,7 +8,7 @@ fi
 VIRT_PATH="$SCRIPT_PATH/virtualenv"
 SSH_KEY_WORKON=~/.ssh/med-key
 
-add_ssh_config() {
+_add_ssh_config() {
     local host=$1
 
     # Create if file not exist
@@ -28,7 +28,7 @@ EOF
     return 0
 }
 
-deploy_key_to() {
+_deploy_key_to() {
     local host=$1
     local res=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $host echo 'ok' 2>&1)
     # Do nothing if the connection success
@@ -55,14 +55,14 @@ deploy_key_to() {
     return 0
 }
 
-function check_connection() {
+function _check_connection() {
     echo -e "Checking connection..."
     local res=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $1 echo 'ok' 2>&1)
     [[ "$res" != "ok" ]] && return 1
     return 0
 }
 
-function create_env() {
+function _create_env() {
     local host="$1"
 
     echo -e "Creating new virtual env...\n\n"
@@ -79,7 +79,7 @@ function create_env() {
     [[ -f $VIRT_PATH/.requirements.txt ]] && pip3 install -r $VIRT_PATH/.requirements.txt
 }
 
-function __generate_proxy_port_file() {
+function _generate_proxy_port_file() {
     for port in {4000..5000}; do
         if [[ "$(lsof -i -P -n | grep $port)" == "" ]]; then
             echo $port > $VIRT_PATH/$host/PROXY_PORT
@@ -88,16 +88,16 @@ function __generate_proxy_port_file() {
     done
 }
 
-function __open_workon_proxy() {
+function _open_workon_proxy() {
     if [[ -f $VIRT_PATH/$host/PROXY_PORT ]]; then
         D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
         if [[ $(ps -aux | grep "ssh -D $D_PORT" | grep "$host" | wc -l) != 1 ]]; then
             # Found last record of port number but could not find existing process
             # Find another port numer and store it
-            __generate_proxy_port_file
+            _generate_proxy_port_file
         fi
     else
-        __generate_proxy_port_file
+        _generate_proxy_port_file
     fi
     # Load latest proxy port file
     D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
@@ -119,23 +119,23 @@ function workon() {
             return 1
         fi
         # Add ssh config
-        add_ssh_config "${user}@${host}"
+        _add_ssh_config "${user}@${host}"
 
-        ! deploy_key_to "${user}@${host}" && return 1
+        ! _deploy_key_to "${user}@${host}" && return 1
 
         # Exit if the host is reachable with identity file
-        ! check_connection $host && echo "Cannot connect to $host with identity file" && return 1
+        ! _check_connection $host && echo "Cannot connect to $host with identity file" && return 1
 
-        create_env $host
+        _create_env $host
 
-        __generate_proxy_port_file
+        _generate_proxy_port_file
     else
         # Exit if the host is not reachable
-        ! check_connection "$host" && echo "Cannot connect to $host" && return 1
+        ! _check_connection "$host" && echo "Cannot connect to $host" && return 1
         source $VIRT_PATH/$host/bin/activate
     fi
 
-    __open_workon_proxy
+    _open_workon_proxy
 
     return 0
 }
