@@ -123,7 +123,7 @@ function workon() {
                 shift 2
                 ;;
             --upgrade)
-                bash <(curl -s https://raw.githubusercontent.com/MedicineYeh/workon/master/easy_install.sh)
+                bash <(curl -s -L https://raw.githubusercontent.com/MedicineYeh/workon/master/easy_install.sh)
                 source ~/.workon/env.sh
                 return 0
                 ;;

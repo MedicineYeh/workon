@@ -2,7 +2,7 @@
 
 Run the following command to install/upgrade the latest release.
 ``` bash
-bash <(curl -s https://raw.github.com/MedicineYeh/workon/master/easy_install.sh)
+bash <(curl -s -L https://raw.githubusercontent.com/MedicineYeh/workon/master/easy_install.sh)
 ```
 
 # Usage
