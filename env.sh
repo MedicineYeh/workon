@@ -140,6 +140,7 @@ function workon() {
         esac
     done
     [[ "$host_name_input" == "" ]] && echo "Please specify host_ip/FQDN" && return 1
+    [[ "$VIRTUAL_ENV" != "" ]] && echo "Recursive virtual env. Please run 'deactivate'" && return 1
     local host="${host_name_input##*@}"
     local user="${host_name_input%%@*}"
 
