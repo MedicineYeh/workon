@@ -5,7 +5,7 @@ mkdir -p ~/.workon
 cd ~/.workon
 
 echo " * Download the latest release"
-curl -o workon.tar.gz -L https://github.com/MedicineYeh/workon/archive/v1.2.1.tar.gz
+curl -o workon.tar.gz -L https://github.com/MedicineYeh/workon/archive/v2.0.tar.gz
 tar --strip-components=1 -xf workon.tar.gz
 rm -f workon.tar.gz
 
