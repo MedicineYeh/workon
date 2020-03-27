@@ -1,0 +1,9 @@
+decorator==4.4.2
+jsonpatch==1.25
+jsonpath-rw==1.4.0
+jsonpointer==2.0
+ply==3.11
+PySocks==1.7.1
+python-ilorest-library==3.0.0
+six==1.14.0
+urllib3==1.25.8

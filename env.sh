@@ -6,6 +6,7 @@ else
     SCRIPT_PATH=$(cd ~/.workon && pwd)
 fi
 VIRT_PATH="$SCRIPT_PATH/virtualenv"
+PROFILE_PATH="$SCRIPT_PATH/profile"
 SSH_KEY_WORKON=~/.ssh/med-key
 
 _add_ssh_config() {
@@ -76,7 +77,7 @@ function _create_env() {
 
     # Active virtual env and install dependencies in the virtual env
     source $VIRT_PATH/$host/bin/activate
-    [[ -f $VIRT_PATH/.requirements.txt ]] && pip3 install -r $VIRT_PATH/.requirements.txt
+    [[ -f $PROFILE_PATH/basic.txt ]] && pip3 install -r $PROFILE_PATH/basic.txt
 }
 
 function _generate_proxy_port_file() {
@@ -109,9 +110,38 @@ function _open_workon_proxy() {
 }
 
 function workon() {
-    [[ "$1" == "" ]] && echo "Please specify host_ip/FQDN" && exit 1
-    local host="${1##*@}"
-    local user="${1%%@*}"
+    while true; do
+        [[ "$1" == "" ]] && break
+        case "$1" in
+            -p|--profile)
+                [[ "$2" == "" ]] && echo "Please specify a profile name (ilo/vmware)" && return 1
+                local pip_profile="$PROFILE_PATH/${2}.txt"
+                if [[ ! -f $pip_profile ]]; then
+                    "File $pip_profile not found"
+                    return 1
+                fi
+                shift 2
+                ;;
+            --upgrade)
+                bash <(curl -s https://raw.githubusercontent.com/MedicineYeh/workon/master/easy_install.sh)
+                source ~/.workon/env.sh
+                return 0
+                ;;
+            -h|--help)
+                echo "workon USERNAME@HOST"
+                echo "workon -p,--profile {ilo,vmware} USERNAME@HOST"
+                echo "workon --upgrade"
+                return 0
+                ;;
+            *)
+                local host_name_input="$1"
+                shift
+                ;;
+        esac
+    done
+    [[ "$host_name_input" == "" ]] && echo "Please specify host_ip/FQDN" && return 1
+    local host="${host_name_input##*@}"
+    local user="${host_name_input%%@*}"
 
     if [[ ! -d $VIRT_PATH/$host ]]; then
         if [[ "$user" == "$host" ]]; then
@@ -128,12 +158,27 @@ function workon() {
 
         _create_env $host
 
+        # Create empty file for storing installed python profile
+        touch $VIRT_PATH/$host/profile
+
+        # Find available proxy port number and store
         _generate_proxy_port_file
     else
         # Exit if the host is not reachable
         ! _check_connection "$host" && echo "Cannot connect to $host" && return 1
         source $VIRT_PATH/$host/bin/activate
     fi
+
+    if [[ -f $pip_profile ]]; then
+        echo "Installing pip packages from profile $pip_profile"
+        pip3 install -r "$pip_profile" || return 1
+        echo "$(basename $pip_profile)" >> $VIRT_PATH/$host/profile
+        # Sort and remove empty lines
+        cat $VIRT_PATH/$host/profile | sort | uniq | awk NF > $VIRT_PATH/$host/profile
+    fi
+    echo "Installed profile list:"
+    cat $VIRT_PATH/$host/profile
+    echo ""
 
     _open_workon_proxy
 
