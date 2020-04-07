@@ -13,7 +13,7 @@ _add_ssh_config() {
     local host=$1
 
     # Create if file not exist
-    [[ ! -f  ~/.ssh/config ]] && touch  ~/.ssh/config
+    [[ ! -f  ~/.ssh/config ]] && mkdir -p ~/.ssh && touch  ~/.ssh/config
     # Do nothing if config exists
     [[ $(grep "Host ${host##*@}" ~/.ssh/config) != "" ]] && return 0
     echo "Adding $host to ~/.ssh/config"
