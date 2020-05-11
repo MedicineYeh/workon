@@ -89,22 +89,32 @@ function _generate_proxy_port_file() {
     done
 }
 
-function _open_workon_proxy() {
-    if [[ -f $VIRT_PATH/$host/PROXY_PORT ]]; then
-        D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
-        if [[ $(ps -aux | grep "ssh -D $D_PORT" | grep "$host" | wc -l) != 1 ]]; then
-            # Found last record of port number but could not find existing process
-            # Find another port numer and store it
-            _generate_proxy_port_file
-        fi
+function _workon_ssh_proxy_existed() {
+    local host="$1"
+    local D_PORT="$2"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # Need to trim the string with xargs in MacOS
+        [[ $(ps -A | grep "ssh -D $D_PORT" | grep "$host" | wc -l | xargs) != 0 ]] && return 0 || return 1
     else
+        [[ $(ps -aux | grep "ssh -D $D_PORT" | grep "$host" | wc -l) != 0 ]] && return 0 || return 1
+    fi
+}
+
+function _open_workon_proxy() {
+    host="$1"
+    # Generate proxy port file if not present
+    [[ ! -f $VIRT_PATH/$host/PROXY_PORT ]] && _generate_proxy_port_file
+
+    # Generate proxy port file if the port number is used by other processes
+    D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
+    if ! _workon_ssh_proxy_existed "$host" "$D_PORT" && [[ "$(lsof -i -P -n | grep "$D_PORT")" != "" ]]; then
         _generate_proxy_port_file
     fi
+
     # Load latest proxy port file
     D_PORT=$(cat $VIRT_PATH/$host/PROXY_PORT)
     # Create a new ssh daemon for SOCKS proxy if not exist
-    [[ $(ps -aux | grep "ssh -D $D_PORT" | grep "$host" | wc -l) != 1 ]] && \
-        /usr/bin/ssh -D $D_PORT -f -C -q -N "$host"
+    ! _workon_ssh_proxy_existed "$host" "$D_PORT" && /usr/bin/ssh -D "$D_PORT" -f -C -q -N "$host"
     export WORKON_PROXY="socks5://127.0.0.1:$D_PORT"
     echo "WORKON_PROXY=$WORKON_PROXY"
 }
@@ -181,7 +191,7 @@ function workon() {
     cat $VIRT_PATH/$host/profile
     echo ""
 
-    _open_workon_proxy
+    _open_workon_proxy "$host"
 
     return 0
 }
