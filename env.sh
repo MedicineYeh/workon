@@ -31,7 +31,7 @@ EOF
 
 _deploy_key_to() {
     local host=$1
-    local res=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $host echo 'ok' 2>&1)
+    local res=$(ssh -o PasswordAuthentication=no -o PreferredAuthentications=publickey -o StrictHostKeyChecking=no -o ConnectTimeout=10 $host echo 'ok' 2>&1)
     # Do nothing if the connection success
     [[ "$res" == "ok" ]] && return 0
     # Exit if the connection time out
